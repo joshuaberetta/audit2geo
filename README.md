@@ -47,6 +47,99 @@ The script converts epoch timestamps from milliseconds to human-readable format:
    - Click "Process File" to see results on the map
    - Download the processed file
 
+## Production Deployment
+
+### Docker Deployment with Existing Nginx
+
+This setup works with your existing nginx installation on the host machine:
+
+1. **Build and Start Container**
+   ```bash
+   docker-compose up -d
+   ```
+   
+   This exposes the Flask app on `127.0.0.1:8005` (localhost only, for security)
+
+2. **Configure Your Host Nginx**
+   
+   Copy the provided nginx configuration:
+   ```bash
+   sudo cp nginx.conf /etc/nginx/sites-available/audit2geo
+   sudo ln -s /etc/nginx/sites-available/audit2geo /etc/nginx/sites-enabled/
+   sudo nginx -t
+   sudo systemctl reload nginx
+   ```
+
+3. **Set Up SSL with Certbot**
+   ```bash
+   sudo certbot --nginx -d audit2geo.imtools.info
+   ```
+   
+   Certbot will automatically:
+   - Obtain an SSL certificate
+   - Configure HTTPS in your nginx config
+   - Set up HTTP to HTTPS redirect
+   - Configure automatic certificate renewal
+
+4. **Verify Deployment**
+   ```bash
+   # Check Docker container
+   docker-compose ps
+   docker-compose logs -f
+   
+   # Test the endpoint
+   curl http://localhost:8005/
+   curl http://audit2geo.imtools.info/
+   curl https://audit2geo.imtools.info/
+   ```
+
+### Application Management
+
+**View Logs:**
+```bash
+docker-compose logs -f
+```
+
+**Restart Application:**
+```bash
+docker-compose restart
+```
+
+**Update Application:**
+```bash
+git pull
+docker-compose build
+docker-compose up -d
+```
+
+**Stop Application:**
+```bash
+docker-compose down
+```
+
+### Nginx Configuration Details
+
+The application runs on `127.0.0.1:8005` and nginx proxies requests to it:
+- **Client Max Body Size:** 16MB for CSV uploads
+- **Timeouts:** 120s for processing large files
+- **Gzip Compression:** Enabled for better performance
+- **Security Headers:** X-Frame-Options, X-Content-Type-Options, X-XSS-Protection
+- **Keep-Alive:** Connection pooling for better performance
+
+### SSL Certificate Renewal
+
+Certbot sets up automatic renewal via systemd timer. Check renewal status:
+```bash
+sudo certbot renew --dry-run
+sudo systemctl status certbot.timer
+```
+
+Certificates will auto-renew 30 days before expiration.
+
+### Alternative: Full Docker Setup (Not Needed)
+
+If you want nginx in Docker too, see [DOCKER.md](DOCKER.md) for the full containerized setup.
+
 ## Command Line Usage
 
 The original command-line tool is still available in `audit2geo.py`:
