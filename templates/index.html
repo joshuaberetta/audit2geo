@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit2Geo - CSV to GeoJSON/KML Converter</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet Polyline Decorator CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.css" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #f4f5f7;
+            color: #2c3e50;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: white;
+            border-bottom: 1px solid #e1e4e8;
+            padding: 24px 0;
+            margin-bottom: 32px;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px;
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                padding: 0 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .header-content {
+                padding: 0 16px;
+            }
+        }
+
+        h1 {
+            font-size: 24px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 4px;
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 20px;
+            }
+        }
+
+        .tagline {
+            font-size: 11px;
+            color: #95a5a6;
+            font-style: italic;
+            letter-spacing: 0.3px;
+        }
+
+        @media (max-width: 480px) {
+            .tagline {
+                font-size: 10px;
+            }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 40px 40px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 0 20px 20px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 16px 16px;
+            }
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+        }
+
+        @media (max-width: 768px) {
+            .card {
+                padding: 24px 20px;
+            }
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 480px) {
+            .section-title {
+                font-size: 16px;
+                margin-bottom: 16px;
+            }
+        }
+
+        .upload-area {
+            border: 2px dashed #d1d5da;
+            border-radius: 4px;
+            padding: 40px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #f8f9fa;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 480px) {
+            .upload-area {
+                padding: 30px 16px;
+                margin-bottom: 20px;
+            }
+        }
+
+        .upload-area:hover {
+            border-color: #4A90E2;
+            background: #f4f5f7;
+        }
+
+        .upload-area.dragover {
+            border-color: #4A90E2;
+            background: rgba(74, 144, 226, 0.05);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: #7f8c8d;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .upload-icon {
+                font-size: 36px;
+                margin-bottom: 8px;
+            }
+        }
+
+        .upload-text {
+            font-size: 14px;
+            color: #586069;
+            margin-bottom: 8px;
+        }
+
+        .upload-hint {
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        select, input[type="number"] {
+            width: 100%;
+            padding: 11px 12px;
+            border: 1px solid #d1d5da;
+            border-radius: 3px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: #4A90E2;
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 400;
+        }
+
+        .threshold-input {
+            margin-top: 12px;
+            padding-left: 26px;
+        }
+
+        .threshold-input.hidden {
+            display: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px 16px;
+            background: #4A90E2;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover:not(:disabled) {
+            background: #357ABD;
+        }
+
+        button:active:not(:disabled) {
+            background: #2E6DA4;
+        }
+
+        button:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #4A90E2;
+            border: 1px solid #d1d5da;
+            margin-top: 12px;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #f8f9fa;
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            border-radius: 3px;
+            font-size: 14px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        .status-message.success {
+            display: block;
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .status-message.error {
+            display: block;
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+
+        .outliers-panel {
+            background: #fff5f5;
+            border: 1px solid #feb2b2;
+            border-radius: 3px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .outliers-panel {
+                padding: 12px;
+            }
+        }
+
+        .outliers-panel.visible {
+            display: block;
+        }
+
+        .outliers-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: #c53030;
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 480px) {
+            .outliers-title {
+                font-size: 12px;
+            }
+        }
+
+        .outlier-item {
+            font-size: 12px;
+            color: #586069;
+            padding: 6px 0;
+            border-bottom: 1px solid #fed7d7;
+            word-break: break-word;
+        }
+
+        @media (max-width: 480px) {
+            .outlier-item {
+                font-size: 11px;
+                padding: 4px 0;
+            }
+        }
+
+        .outlier-item:last-child {
+            border-bottom: none;
+        }
+
+        #map {
+            height: 600px;
+            border-radius: 4px;
+        }
+
+        @media (max-width: 768px) {
+            #map {
+                height: 400px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #map {
+                height: 350px;
+            }
+        }
+
+        .map-card {
+            background: white;
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+        }
+
+        @media (max-width: 768px) {
+            .map-card {
+                padding: 20px 16px;
+            }
+        }
+
+        .stats {
+            display: flex;
+            gap: 24px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid #e1e4e8;
+        }
+
+        @media (max-width: 768px) {
+            .stats {
+                flex-direction: column;
+                gap: 16px;
+            }
+        }
+
+        .stat-item {
+            flex: 1;
+        }
+
+        @media (max-width: 768px) {
+            .stat-item {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        #speedChart {
+            max-height: 350px;
+            margin: 16px 0;
+        }
+
+        @media (max-width: 768px) {
+            #speedChart {
+                max-height: 250px;
+            }
+        }
+
+        .file-name {
+            font-size: 13px;
+            color: #4A90E2;
+            font-weight: 500;
+            margin-bottom: 16px;
+            padding: 8px 12px;
+            background: rgba(74, 144, 226, 0.05);
+            border-radius: 3px;
+            text-align: center;
+        }
+
+        .download-section {
+            display: none;
+        }
+
+        .download-section.visible {
+            display: block;
+        }
+
+        .divider {
+            height: 1px;
+            background: #e1e4e8;
+            margin: 24px 0;
+        }
+
+        footer {
+            text-align: center;
+            padding: 24px;
+            font-size: 12px;
+            color: #7f8c8d;
+        }
+
+        @media (max-width: 480px) {
+            footer {
+                padding: 20px 16px;
+                font-size: 11px;
+            }
+        }
+
+        /* Leaflet popup delete button styles */
+        .leaflet-popup-content button:hover {
+            background: #c82333 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>Audit2Geo</h1>
+            <div class="tagline">Convert audit CSV files to GeoJSON/KML with outlier detection</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="main-grid">
+            <div class="card">
+                <h2 class="section-title">Upload & Configure</h2>
+                
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div class="upload-text">Drop CSV file here or click to browse</div>
+                    <div class="upload-hint">Maximum file size: 16MB</div>
+                </div>
+                
+                <input type="file" id="fileInput" class="file-input" accept=".csv">
+                
+                <div class="file-name" id="fileName"></div>
+                
+                <div class="status-message" id="statusMessage"></div>
+                
+                <div class="form-group">
+                    <label for="outputFormat">Output Format</label>
+                    <select id="outputFormat">
+                        <option value="geojson">GeoJSON</option>
+                        <option value="kml" {% if not kml_available %}disabled{% endif %}>KML{% if not kml_available %} (not available - install simplekml){% endif %}</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="checkOutliers">
+                        <label for="checkOutliers">Check for outliers</label>
+                    </div>
+                    <div class="threshold-input hidden" id="thresholdGroup">
+                        <label for="threshold">Threshold (km)</label>
+                        <input type="number" id="threshold" value="100" min="1" step="1">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="removeOutliers">
+                        <label for="removeOutliers">Remove outliers from output</label>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="showDirection" checked>
+                        <label for="showDirection">Show direction of travel</label>
+                    </div>
+                </div>
+                
+                <div class="outliers-panel" id="outliersPanel">
+                    <div class="outliers-title">⚠️ Outliers Detected</div>
+                    <div id="outliersList"></div>
+                </div>
+                
+                <button id="processBtn" disabled>Process File</button>
+                
+                <div class="download-section" id="downloadSection">
+                    <div class="divider"></div>
+                    <button id="downloadBtn" class="btn-secondary">Download Result</button>
+                </div>
+            </div>
+
+            <div class="map-card">
+                <h2 class="section-title">Map View</h2>
+                <div id="map"></div>
+                <div class="stats" id="stats" style="display: none;">
+                    <div class="stat-item">
+                        <div class="stat-label">Total Points</div>
+                        <div class="stat-value" id="totalPoints">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Displayed Points</div>
+                        <div class="stat-value" id="displayedPoints">0</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Outliers Found</div>
+                        <div class="stat-value" id="outliersCount">0</div>
+                    </div>
+                </div>
+
+                <div class="divider" id="speedDivider" style="display: none;"></div>
+
+                <div id="speedAnalysisSection" style="display: none;">
+                    <h2 class="section-title" style="margin-bottom: 16px;">Speed Analysis</h2>
+                    <canvas id="speedChart"></canvas>
+                    <div class="stats" id="speedStats" style="display: none;">
+                        <div class="stat-item">
+                            <div class="stat-label">Total Distance</div>
+                            <div class="stat-value" id="totalDistance">0 km</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Average Speed</div>
+                            <div class="stat-value" id="avgSpeed">0 km/h</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Max Speed</div>
+                            <div class="stat-value" id="maxSpeed">0 km/h</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        Audit2Geo - Humanitarian Data Geocoding Tool
+    </footer>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet Polyline Decorator JS -->
+    <script src="https://unpkg.com/leaflet-polylinedecorator@1.6.0/dist/leaflet.polylineDecorator.js"></script>
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+    
+    <script>
+        // Initialize map
+        const map = L.map('map').setView([0, 0], 2);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        // Global variables
+        let currentFile = null;
+        let currentGeoJSON = null;
+        let markerLayer = L.layerGroup().addTo(map);
+        let deletedPoints = new Set(); // Track deleted point indices
+        let pathLine = null; // Store reference to the path polyline
+        let pathDecorator = null; // Store reference to the arrow decorator
+        let speedChart = null; // Store reference to the speed chart
+
+        // DOM elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const fileName = document.getElementById('fileName');
+        const processBtn = document.getElementById('processBtn');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const outliersPanel = document.getElementById('outliersPanel');
+        const outliersList = document.getElementById('outliersList');
+        const checkOutliers = document.getElementById('checkOutliers');
+        const removeOutliers = document.getElementById('removeOutliers');
+        const thresholdGroup = document.getElementById('thresholdGroup');
+        const threshold = document.getElementById('threshold');
+        const outputFormat = document.getElementById('outputFormat');
+        const downloadSection = document.getElementById('downloadSection');
+        const stats = document.getElementById('stats');
+        const showDirection = document.getElementById('showDirection');
+
+        // File upload handlers
+        uploadArea.addEventListener('click', () => fileInput.click());
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            
+            if (e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.name.endsWith('.csv')) {
+                    handleFileSelect(file);
+                } else {
+                    showStatus('Please upload a CSV file', 'error');
+                }
+            }
+        });
+        
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFileSelect(e.target.files[0]);
+            }
+        });
+
+        function handleFileSelect(file) {
+            currentFile = file;
+            fileName.textContent = `📄 ${file.name}`;
+            fileName.style.display = 'block';
+            processBtn.disabled = false;
+            showStatus('', '');
+            outliersPanel.classList.remove('visible');
+            downloadSection.classList.remove('visible');
+        }
+
+        // Checkbox handlers
+        checkOutliers.addEventListener('change', () => {
+            if (checkOutliers.checked) {
+                thresholdGroup.classList.remove('hidden');
+            } else {
+                thresholdGroup.classList.add('hidden');
+                removeOutliers.checked = false;
+            }
+        });
+
+        // Direction toggle handler
+        showDirection.addEventListener('change', () => {
+            if (currentGeoJSON) {
+                redrawMap();
+            }
+        });
+
+        // Process button handler
+        processBtn.addEventListener('click', async () => {
+            if (!currentFile) return;
+            
+            processBtn.disabled = true;
+            processBtn.textContent = 'Processing...';
+            showStatus('', '');
+            
+            const formData = new FormData();
+            formData.append('file', currentFile);
+            formData.append('remove_outliers', removeOutliers.checked);
+            formData.append('threshold', threshold.value * 1000); // Convert km to meters
+            
+            try {
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to process file');
+                }
+                
+                currentGeoJSON = data.geojson;
+                displayResults(data);
+                showStatus('File processed successfully!', 'success');
+                downloadSection.classList.add('visible');
+                
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                processBtn.disabled = false;
+                processBtn.textContent = 'Process File';
+            }
+        });
+
+        function displayResults(data) {
+            // Clear existing markers
+            markerLayer.clearLayers();
+            if (pathLine) {
+                map.removeLayer(pathLine);
+                pathLine = null;
+            }
+            if (pathDecorator) {
+                map.removeLayer(pathDecorator);
+                pathDecorator = null;
+            }
+            deletedPoints.clear(); // Reset deleted points
+            
+            // Display outliers info
+            if (checkOutliers.checked && data.outliers.length > 0) {
+                outliersPanel.classList.add('visible');
+                outliersList.innerHTML = data.outliers.map(outlier => 
+                    `<div class="outlier-item">
+                        Point ${outlier.index + 1}: ${outlier.event} (${outlier.distance_km}km from center)
+                    </div>`
+                ).join('');
+            } else {
+                outliersPanel.classList.remove('visible');
+            }
+            
+            // Update stats
+            updateStats(data);
+            
+            // Update speed chart
+            updateSpeedChart(data.geojson);
+            
+            // Add markers and path to map
+            redrawMap();
+        }
+
+        function redrawMap() {
+            if (!currentGeoJSON) return;
+            
+            // Clear existing layers
+            markerLayer.clearLayers();
+            if (pathLine) {
+                map.removeLayer(pathLine);
+                pathLine = null;
+            }
+            if (pathDecorator) {
+                map.removeLayer(pathDecorator);
+                pathDecorator = null;
+            }
+            
+            const bounds = [];
+            let pointIndex = 0;
+            
+            currentGeoJSON.features.forEach((feature, featureIndex) => {
+                if (feature.geometry.type === 'Point') {
+                    const [lon, lat] = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    const currentPointIndex = pointIndex++;
+                    
+                    const marker = L.circleMarker([lat, lon], {
+                        radius: 6,
+                        fillColor: props.is_outlier ? '#ff0000' : '#4A90E2',
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.7
+                    });
+                    
+                    const popupContent = `
+                        <div style="min-width: 200px;">
+                            <strong>${props.event}</strong><br>
+                            ${props.node ? `Node: ${props.node}<br>` : ''}
+                            ${props.start ? `Start: ${props.start}<br>` : ''}
+                            ${props.accuracy ? `Accuracy: ${props.accuracy}m<br>` : ''}
+                            <button 
+                                onclick="deletePoint(${featureIndex}, ${currentPointIndex})" 
+                                style="margin-top: 8px; padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; width: 100%;">
+                                🗑️ Delete Point
+                            </button>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    marker.addTo(markerLayer);
+                    bounds.push([lat, lon]);
+                }
+                else if (feature.geometry.type === 'LineString') {
+                    const coords = feature.geometry.coordinates.map(c => [c[1], c[0]]);
+                    pathLine = L.polyline(coords, {
+                        color: '#4A90E2',
+                        weight: 3,
+                        opacity: 0.7
+                    }).addTo(map);
+                    
+                    // Add direction arrows if enabled
+                    if (showDirection.checked) {
+                        pathDecorator = L.polylineDecorator(pathLine, {
+                            patterns: [
+                                {
+                                    offset: 25,
+                                    repeat: 100,
+                                    symbol: L.Symbol.arrowHead({
+                                        pixelSize: 12,
+                                        polygon: false,
+                                        pathOptions: {
+                                            stroke: true,
+                                            weight: 2,
+                                            color: '#2E6DA4',
+                                            opacity: 0.8
+                                        }
+                                    })
+                                }
+                            ]
+                        }).addTo(map);
+                    }
+                }
+            });
+            
+            // Fit map to bounds
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+        }
+
+        function deletePoint(featureIndex, pointIndex) {
+            if (!currentGeoJSON) return;
+            
+            // Mark point as deleted
+            deletedPoints.add(featureIndex);
+            
+            // Remove the feature from the GeoJSON
+            currentGeoJSON.features = currentGeoJSON.features.filter((f, idx) => idx !== featureIndex);
+            
+            // Rebuild the path LineString with remaining points
+            const pathCoordinates = [];
+            currentGeoJSON.features.forEach(feature => {
+                if (feature.geometry.type === 'Point') {
+                    pathCoordinates.push(feature.geometry.coordinates);
+                }
+            });
+            
+            // Remove old LineString if exists
+            currentGeoJSON.features = currentGeoJSON.features.filter(f => f.geometry.type !== 'LineString');
+            
+            // Add new LineString if we have enough points
+            if (pathCoordinates.length > 1) {
+                currentGeoJSON.features.push({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": pathCoordinates
+                    },
+                    "properties": {
+                        "name": "Audit Path",
+                        "description": `Path with ${pathCoordinates.length} points`
+                    }
+                });
+            }
+            
+            // Redraw the map
+            markerLayer.clearLayers();
+            const bounds = [];
+            let newPointIndex = 0;
+            
+            currentGeoJSON.features.forEach((feature, featureIndex) => {
+                if (feature.geometry.type === 'Point') {
+                    const [lon, lat] = feature.geometry.coordinates;
+                    const props = feature.properties;
+                    const currentPointIndex = newPointIndex++;
+                    
+                    const marker = L.circleMarker([lat, lon], {
+                        radius: 6,
+                        fillColor: props.is_outlier ? '#ff0000' : '#4A90E2',
+                        color: '#fff',
+                        weight: 2,
+                        opacity: 1,
+                        fillOpacity: 0.7
+                    });
+                    
+                    const popupContent = `
+                        <div style="min-width: 200px;">
+                            <strong>${props.event}</strong><br>
+                            ${props.node ? `Node: ${props.node}<br>` : ''}
+                            ${props.start ? `Start: ${props.start}<br>` : ''}
+                            ${props.accuracy ? `Accuracy: ${props.accuracy}m<br>` : ''}
+                            <button 
+                                onclick="deletePoint(${featureIndex}, ${currentPointIndex})" 
+                                style="margin-top: 8px; padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; width: 100%;">
+                                🗑️ Delete Point
+                            </button>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                    marker.addTo(markerLayer);
+                    bounds.push([lat, lon]);
+                }
+                else if (feature.geometry.type === 'LineString') {
+                    const coords = feature.geometry.coordinates.map(c => [c[1], c[0]]);
+                    if (pathLine) {
+                        map.removeLayer(pathLine);
+                    }
+                    if (pathDecorator) {
+                        map.removeLayer(pathDecorator);
+                    }
+                    pathLine = L.polyline(coords, {
+                        color: '#4A90E2',
+                        weight: 3,
+                        opacity: 0.7
+                    }).addTo(map);
+                    
+                    // Add direction arrows if enabled
+                    if (showDirection.checked) {
+                        pathDecorator = L.polylineDecorator(pathLine, {
+                            patterns: [
+                                {
+                                    offset: 25,
+                                    repeat: 100,
+                                    symbol: L.Symbol.arrowHead({
+                                        pixelSize: 12,
+                                        polygon: false,
+                                        pathOptions: {
+                                            stroke: true,
+                                            weight: 2,
+                                            color: '#2E6DA4',
+                                            opacity: 0.8
+                                        }
+                                    })
+                                }
+                            ]
+                        }).addTo(map);
+                    }
+                }
+            });
+            
+            // Update stats
+            const pointCount = currentGeoJSON.features.filter(f => f.geometry.type === 'Point').length;
+            document.getElementById('displayedPoints').textContent = pointCount;
+            
+            // Update speed chart
+            updateSpeedChart(currentGeoJSON);
+            
+            // Fit map to new bounds if we still have points
+            if (bounds.length > 0) {
+                map.fitBounds(bounds, { padding: [50, 50] });
+            }
+            
+            showStatus(`Point deleted. ${pointCount} points remaining.`, 'success');
+        }
+
+        function updateStats(data) {
+            stats.style.display = 'flex';
+            document.getElementById('totalPoints').textContent = data.total_points;
+            document.getElementById('displayedPoints').textContent = data.processed_points;
+            document.getElementById('outliersCount').textContent = data.outliers.length;
+        }
+
+        function calculateDistance(coord1, coord2) {
+            const [lon1, lat1] = coord1;
+            const [lon2, lat2] = coord2;
+            
+            const R = 6371000; // Earth's radius in meters
+            const phi1 = lat1 * Math.PI / 180;
+            const phi2 = lat2 * Math.PI / 180;
+            const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+            const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+            
+            const a = Math.sin(deltaPhi/2) * Math.sin(deltaPhi/2) +
+                     Math.cos(phi1) * Math.cos(phi2) *
+                     Math.sin(deltaLambda/2) * Math.sin(deltaLambda/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            
+            return R * c; // Distance in meters
+        }
+
+        function updateSpeedChart(geojson) {
+            // Extract point features with timestamps - use 'end' timestamp which has more variation
+            const points = geojson.features
+                .filter(f => f.geometry.type === 'Point' && (f.properties.end || f.properties.start))
+                .map(f => {
+                    // Prefer 'end' timestamp as it has more variation in the data
+                    const timestampStr = f.properties.end || f.properties.start;
+                    return {
+                        coords: f.geometry.coordinates,
+                        timestamp: new Date(timestampStr),
+                        timestampMs: new Date(timestampStr).getTime(),
+                        event: f.properties.event,
+                        timestampString: timestampStr
+                    };
+                })
+                .sort((a, b) => a.timestampMs - b.timestampMs);
+            
+            console.log('Total points for speed calculation:', points.length);
+            console.log('First 5 timestamps (ms):', points.slice(0, 5).map(p => p.timestampMs));
+            console.log('Timestamp differences (ms):', points.slice(0, 5).map((p, i) => i > 0 ? p.timestampMs - points[i-1].timestampMs : 0));
+            
+            if (points.length < 2) {
+                if (speedChart) {
+                    speedChart.destroy();
+                    speedChart = null;
+                }
+                document.getElementById('speedStats').style.display = 'none';
+                document.getElementById('speedAnalysisSection').style.display = 'none';
+                document.getElementById('speedDivider').style.display = 'none';
+                return;
+            }
+            
+            // Show the speed analysis section
+            document.getElementById('speedAnalysisSection').style.display = 'block';
+            document.getElementById('speedDivider').style.display = 'block';
+            
+            // Calculate speeds and distances
+            const speedData = [];
+            let totalDistance = 0;
+            let totalTime = 0;
+            let pointCounter = 0;
+            
+            for (let i = 1; i < points.length; i++) {
+                const distance = calculateDistance(points[i-1].coords, points[i].coords);
+                // Use exact millisecond difference, convert to seconds without rounding
+                const timeDiffMs = points[i].timestampMs - points[i-1].timestampMs;
+                const timeDiff = timeDiffMs / 1000.0; // Precise seconds with decimals
+                
+                if (i <= 5) {
+                    console.log(`Segment ${i}: distance=${distance.toFixed(2)}m, timeDiff=${timeDiff.toFixed(3)}s (${timeDiffMs}ms)`);
+                }
+                
+                // Only include if there's actual movement
+                if (distance > 0.1) { // At least 10cm movement
+                    // Calculate speed - even if time is 0, use small epsilon to avoid infinity
+                    const effectiveTime = Math.max(timeDiff, 0.001); // 1ms minimum
+                    const speed = (distance / effectiveTime) * 3.6; // Convert m/s to km/h
+                    
+                    // Cap unrealistic speeds (e.g., > 200 km/h for ground travel)
+                    const cappedSpeed = Math.min(speed, 200);
+                    
+                    speedData.push({
+                        x: points[i].timestamp,
+                        y: cappedSpeed,
+                        distance: distance / 1000, // km
+                        actualTimeDiff: timeDiff,
+                        timeDiffMs: timeDiffMs
+                    });
+                    totalDistance += distance;
+                    totalTime += timeDiff;
+                    pointCounter++;
+                }
+            }
+            
+            console.log('Speed data points created:', speedData.length);
+            if (speedData.length > 0) {
+                console.log('First 5 speed values (km/h):', speedData.slice(0, 5).map(d => d.y.toFixed(2)));
+                console.log('Time spread (ms):', speedData.length > 1 ? speedData[speedData.length-1].x - speedData[0].x : 0);
+            }
+            
+            if (speedData.length === 0) {
+                console.warn('No valid speed data points generated');
+                if (speedChart) {
+                    speedChart.destroy();
+                    speedChart = null;
+                }
+                document.getElementById('speedStats').style.display = 'none';
+                document.getElementById('speedAnalysisSection').style.display = 'none';
+                document.getElementById('speedDivider').style.display = 'none';
+                return;
+            }
+            
+            const totalDistanceKm = totalDistance / 1000;
+            const avgSpeed = totalTime > 0 ? (totalDistance / totalTime) * 3.6 : 0; // km/h
+            const maxSpeed = speedData.length > 0 ? Math.max(...speedData.map(d => d.y)) : 0;
+            
+            // Update stats
+            document.getElementById('totalDistance').textContent = `${totalDistanceKm.toFixed(2)} km`;
+            document.getElementById('avgSpeed').textContent = `${avgSpeed.toFixed(1)} km/h`;
+            document.getElementById('maxSpeed').textContent = `${maxSpeed.toFixed(1)} km/h`;
+            document.getElementById('speedStats').style.display = 'flex';
+            
+            // Determine best time unit based on data spread
+            const timeSpreadMs = speedData[speedData.length-1].x - speedData[0].x;
+            const timeSpreadMinutes = timeSpreadMs / 60000;
+            let timeUnit = 'second';
+            let displayFormat = 'HH:mm:ss';
+            
+            if (timeSpreadMinutes > 120) { // More than 2 hours
+                timeUnit = 'minute';
+                displayFormat = 'HH:mm';
+            } else if (timeSpreadMinutes > 5) { // More than 5 minutes
+                timeUnit = 'minute';
+                displayFormat = 'HH:mm:ss';
+            }
+            
+            console.log(`Time spread: ${timeSpreadMinutes.toFixed(1)} minutes, using unit: ${timeUnit}`);
+            
+            // Create or update chart
+            const ctx = document.getElementById('speedChart').getContext('2d');
+            
+            if (speedChart) {
+                speedChart.destroy();
+            }
+            
+            speedChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: [
+                        {
+                            label: 'Ground Speed',
+                            data: speedData,
+                            borderColor: '#4A90E2',
+                            backgroundColor: 'rgba(74, 144, 226, 0.1)',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6,
+                            pointBackgroundColor: '#4A90E2',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
+                            tension: 0.3,
+                            fill: true
+                        },
+                        {
+                            label: 'Average Speed',
+                            data: speedData.map(d => ({ x: d.x, y: avgSpeed })),
+                            borderColor: '#c53030',
+                            borderWidth: 2,
+                            borderDash: [5, 5],
+                            pointRadius: 0,
+                            fill: false
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 3,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 13,
+                                    weight: 500
+                                },
+                                color: '#2c3e50',
+                                usePointStyle: true,
+                                padding: 15
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#2c3e50',
+                            bodyColor: '#586069',
+                            borderColor: '#d1d5da',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            titleFont: {
+                                family: "'Roboto', sans-serif",
+                                size: 13,
+                                weight: 500
+                            },
+                            bodyFont: {
+                                family: "'Roboto', sans-serif",
+                                size: 13
+                            },
+                            callbacks: {
+                                title: function(context) {
+                                    const date = new Date(context[0].parsed.x);
+                                    return date.toLocaleString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        fractionalSecondDigits: 3
+                                    });
+                                },
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        const dataPoint = speedData[context.dataIndex];
+                                        return [
+                                            `Speed: ${context.parsed.y.toFixed(1)} km/h`,
+                                            `Distance: ${(dataPoint.distance * 1000).toFixed(1)}m`,
+                                            `Time diff: ${dataPoint.timeDiffMs}ms`
+                                        ];
+                                    } else {
+                                        return `Avg: ${context.parsed.y.toFixed(1)} km/h`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                minUnit: 'millisecond',
+                                unit: timeUnit,
+                                displayFormats: {
+                                    millisecond: 'HH:mm:ss.SSS',
+                                    second: 'HH:mm:ss',
+                                    minute: displayFormat,
+                                    hour: 'HH:mm',
+                                    day: 'MMM d'
+                                },
+                                tooltipFormat: 'MMM d, HH:mm:ss.SSS'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Time',
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 13,
+                                    weight: 500
+                                },
+                                color: '#2c3e50'
+                            },
+                            grid: {
+                                color: '#e1e4e8',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 12
+                                },
+                                color: '#586069',
+                                maxRotation: 0,
+                                autoSkip: true,
+                                autoSkipPadding: 20,
+                                maxTicksLimit: 15
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Speed (km/h)',
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 13,
+                                    weight: 500
+                                },
+                                color: '#2c3e50'
+                            },
+                            grid: {
+                                color: '#e1e4e8',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 12
+                                },
+                                color: '#586069'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log('Chart created with', speedData.length, 'data points');
+        }
+
+        // Download button handler
+        downloadBtn.addEventListener('click', () => {
+            if (!currentGeoJSON) return;
+            
+            const format = outputFormat.value;
+            const dataStr = encodeURIComponent(JSON.stringify(currentGeoJSON));
+            
+            window.location.href = `/download/${format}?data=${dataStr}`;
+        });
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message';
+            if (type) {
+                statusMessage.classList.add(type);
+            }
+        }
+    </script>
+</body>
+</html>
