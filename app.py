@@ -331,26 +331,45 @@ def index():
 
 @app.route('/process', methods=['POST'])
 def process():
-    """Process uploaded CSV file and return GeoJSON with outlier info."""
-    if 'file' not in request.files:
-        return jsonify({'error': 'No file uploaded'}), 400
+    """Process uploaded CSV file(s) and return GeoJSON with outlier info."""
+    # Check if multiple files were uploaded
+    files = request.files.getlist('files')
     
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({'error': 'No file selected'}), 400
+    if not files or len(files) == 0:
+        # Fallback to single file for backward compatibility
+        if 'file' not in request.files:
+            return jsonify({'error': 'No file uploaded'}), 400
+        files = [request.files['file']]
     
-    if not file.filename.endswith('.csv'):
-        return jsonify({'error': 'File must be a CSV'}), 400
+    # Validate all files
+    for file in files:
+        if file.filename == '':
+            return jsonify({'error': 'Empty filename detected'}), 400
+        if not file.filename.endswith('.csv'):
+            return jsonify({'error': f'File {file.filename} must be a CSV'}), 400
     
     try:
-        csv_content = file.read().decode('utf-8')
-        
         remove_outliers = request.form.get('remove_outliers', 'false').lower() == 'true'
         threshold = float(request.form.get('threshold', 100000))
         
-        result = process_csv_data(csv_content, remove_outliers, threshold)
+        results = []
         
-        return jsonify(result)
+        # Process each file
+        for file in files:
+            csv_content = file.read().decode('utf-8')
+            result = process_csv_data(csv_content, remove_outliers, threshold)
+            result['filename'] = file.filename
+            results.append(result)
+        
+        # Return single result for backward compatibility if only one file
+        if len(results) == 1:
+            return jsonify(results[0])
+        
+        # Return multiple results
+        return jsonify({
+            'multiple': True,
+            'traces': results
+        })
     
     except Exception as e:
         return jsonify({'error': str(e)}), 500

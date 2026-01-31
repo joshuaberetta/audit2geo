@@ -451,6 +451,181 @@
             text-align: center;
         }
 
+        .file-list-item {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            align-items: center;
+            padding: 12px 14px;
+            background: #f8f9fa;
+            border: 1px solid #e1e4e8;
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            transition: all 0.2s;
+            gap: 16px;
+        }
+
+        .file-list-item:hover {
+            background: #e9ecef;
+            border-color: #4A90E2;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .file-list-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .file-list-item-name {
+            display: grid;
+            grid-template-columns: auto 1fr;
+            align-items: center;
+            gap: 12px;
+            min-width: 0;
+        }
+
+        .file-list-item-icon {
+            font-size: 20px;
+            line-height: 1;
+        }
+
+        .file-list-item-info {
+            min-width: 0;
+        }
+
+        .file-list-item-filename {
+            color: #2c3e50;
+            font-weight: 500;
+            font-size: 13px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            line-height: 1.5;
+        }
+
+        .file-list-item-size {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 2px;
+            line-height: 1.3;
+        }
+
+        .file-list-header {
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-list-count {
+            background: #4A90E2;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .file-list-container {
+            margin-bottom: 20px;
+        }
+
+        .file-list-scroll {
+            max-height: 280px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .file-list-scroll::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .file-list-scroll::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .file-list-scroll::-webkit-scrollbar-thumb {
+            background: #4A90E2;
+            border-radius: 4px;
+        }
+
+        .file-list-scroll::-webkit-scrollbar-thumb:hover {
+            background: #357ABD;
+        }
+
+        .file-list-item-remove {
+            background: #fff;
+            color: #dc3545;
+            border: 1px solid #dc3545;
+            border-radius: 4px;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            flex-shrink: 0;
+            transition: all 0.2s;
+            white-space: nowrap;
+            line-height: 1.2;
+        }
+
+        .file-list-item-remove:hover {
+            background: #dc3545;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(220, 53, 69, 0.2);
+        }
+
+        .file-list-item-remove:active {
+            transform: translateY(0);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: #f8f9fa;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border: 1px solid #e1e4e8;
+        }
+
+        .legend-item:hover {
+            background: #e9ecef;
+        }
+
+        .legend-item.disabled {
+            opacity: 0.5;
+        }
+
+        .legend-color {
+            width: 32px;
+            height: 20px;
+            border-radius: 2px;
+            margin-right: 8px;
+            flex-shrink: 0;
+            border: 2px solid white;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.1);
+        }
+
+        .legend-label {
+            flex: 1;
+            font-size: 12px;
+            color: #2c3e50;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .legend-toggle {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+        }
+
         .download-section {
             display: none;
         }
@@ -500,13 +675,19 @@
                 
                 <div class="upload-area" id="uploadArea">
                     <div class="upload-icon">📁</div>
-                    <div class="upload-text">Drop CSV file here or click to browse</div>
-                    <div class="upload-hint">Maximum file size: 16MB</div>
+                    <div class="upload-text">Drop CSV files here or click to browse</div>
+                    <div class="upload-hint">Multiple files supported • Maximum file size: 16MB each</div>
                 </div>
                 
-                <input type="file" id="fileInput" class="file-input" accept=".csv">
+                <input type="file" id="fileInput" class="file-input" accept=".csv" multiple>
                 
-                <div class="file-name" id="fileName"></div>
+                <div id="fileListContainer" class="file-list-container" style="display: none;">
+                    <div class="file-list-header">
+                        <span>Selected Files</span>
+                        <span class="file-list-count" id="fileCount">0</span>
+                    </div>
+                    <div id="fileList" class="file-list-scroll"></div>
+                </div>
                 
                 <div class="status-message" id="statusMessage"></div>
                 
@@ -559,6 +740,19 @@
             <div class="map-card">
                 <h2 class="section-title">Map View</h2>
                 <div id="map"></div>
+                
+                <!-- Legend Panel -->
+                <div id="legendPanel" style="display: none; margin-top: 16px; background: white; border-radius: 4px; padding: 16px; border: 1px solid #e1e4e8;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <h3 class="section-title" style="margin: 0; font-size: 16px;">Traces (<span id="traceCount">0</span>)</h3>
+                        <div style="display: flex; gap: 8px;">
+                            <button id="showAllBtn" style="width: auto; padding: 6px 12px; font-size: 12px;">Show All</button>
+                            <button id="hideAllBtn" style="width: auto; padding: 6px 12px; font-size: 12px; background: #6c757d;">Hide All</button>
+                        </div>
+                    </div>
+                    <input type="text" id="traceFilter" placeholder="Filter traces..." style="width: 100%; padding: 8px 12px; margin-bottom: 12px; border: 1px solid #d1d5da; border-radius: 3px; font-size: 13px;">
+                    <div id="legendItems" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; max-height: 300px; overflow-y: auto;"></div>
+                </div>
                 <div class="stats" id="stats" style="display: none;">
                     <div class="stat-item">
                         <div class="stat-label">Total Points</div>
@@ -621,18 +815,24 @@
         }).addTo(map);
 
         // Global variables
-        let currentFile = null;
+        let currentFiles = []; // Array to store multiple files
+        let traces = []; // Array to store processed trace data with colors
+        let traceLayers = new Map(); // Map of trace ID to Leaflet layer group
+        let traceVisibility = new Map(); // Map of trace ID to visibility state
         let currentGeoJSON = null;
         let markerLayer = L.layerGroup().addTo(map);
         let deletedPoints = new Set(); // Track deleted point indices
         let pathLine = null; // Store reference to the path polyline
         let pathDecorator = null; // Store reference to the arrow decorator
         let speedChart = null; // Store reference to the speed chart
+        let traceColors = []; // Pre-generated color palette
 
         // DOM elements
         const uploadArea = document.getElementById('uploadArea');
         const fileInput = document.getElementById('fileInput');
-        const fileName = document.getElementById('fileName');
+        const fileListContainer = document.getElementById('fileListContainer');
+        const fileList = document.getElementById('fileList');
+        const fileCount = document.getElementById('fileCount');
         const processBtn = document.getElementById('processBtn');
         const downloadBtn = document.getElementById('downloadBtn');
         const statusMessage = document.getElementById('statusMessage');
@@ -646,6 +846,66 @@
         const downloadSection = document.getElementById('downloadSection');
         const stats = document.getElementById('stats');
         const showDirection = document.getElementById('showDirection');
+        const legendPanel = document.getElementById('legendPanel');
+        const legendItems = document.getElementById('legendItems');
+        const showAllBtn = document.getElementById('showAllBtn');
+        const hideAllBtn = document.getElementById('hideAllBtn');
+        const traceFilter = document.getElementById('traceFilter');
+        const traceCount = document.getElementById('traceCount');
+
+        // Generate distinct colors for traces (supports 100+ traces)
+        function generateColorPalette(count) {
+            const colors = [];
+            const saturation = 70;
+            const lightness = 50;
+            
+            // Use golden angle for optimal color distribution
+            const goldenAngle = 137.508;
+            
+            for (let i = 0; i < count; i++) {
+                const hue = (i * goldenAngle) % 360;
+                colors.push(`hsl(${hue}, ${saturation}%, ${lightness}%)`);
+            }
+            
+            return colors;
+        }
+
+        // Convert HSL to hex for better compatibility
+        function hslToHex(hsl) {
+            const match = hsl.match(/hsl\((\d+),\s*(\d+)%,\s*(\d+)%\)/);
+            if (!match) return hsl;
+            
+            const h = parseInt(match[1]) / 360;
+            const s = parseInt(match[2]) / 100;
+            const l = parseInt(match[3]) / 100;
+            
+            const hue2rgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1/6) return p + (q - p) * 6 * t;
+                if (t < 1/2) return q;
+                if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+                return p;
+            };
+            
+            let r, g, b;
+            if (s === 0) {
+                r = g = b = l;
+            } else {
+                const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+                const p = 2 * l - q;
+                r = hue2rgb(p, q, h + 1/3);
+                g = hue2rgb(p, q, h);
+                b = hue2rgb(p, q, h - 1/3);
+            }
+            
+            const toHex = x => {
+                const hex = Math.round(x * 255).toString(16);
+                return hex.length === 1 ? '0' + hex : hex;
+            };
+            
+            return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+        }
 
         // File upload handlers
         uploadArea.addEventListener('click', () => fileInput.click());
@@ -664,29 +924,79 @@
             uploadArea.classList.remove('dragover');
             
             if (e.dataTransfer.files.length > 0) {
-                const file = e.dataTransfer.files[0];
-                if (file.name.endsWith('.csv')) {
-                    handleFileSelect(file);
+                const files = Array.from(e.dataTransfer.files).filter(f => f.name.endsWith('.csv'));
+                if (files.length > 0) {
+                    handleFileSelect(files);
                 } else {
-                    showStatus('Please upload a CSV file', 'error');
+                    showStatus('Please upload CSV files only', 'error');
                 }
             }
         });
         
         fileInput.addEventListener('change', (e) => {
             if (e.target.files.length > 0) {
-                handleFileSelect(e.target.files[0]);
+                handleFileSelect(Array.from(e.target.files));
             }
         });
 
-        function handleFileSelect(file) {
-            currentFile = file;
-            fileName.textContent = `📄 ${file.name}`;
-            fileName.style.display = 'block';
-            processBtn.disabled = false;
+        function handleFileSelect(files) {
+            // Add new files to the list
+            files.forEach(file => {
+                if (file.name.endsWith('.csv')) {
+                    // Check if file already exists
+                    const exists = currentFiles.some(f => f.name === file.name && f.size === file.size);
+                    if (!exists) {
+                        currentFiles.push(file);
+                    }
+                } else {
+                    showStatus(`Skipped ${file.name} - not a CSV file`, 'error');
+                }
+            });
+            
+            updateFileList();
+            processBtn.disabled = currentFiles.length === 0;
             showStatus('', '');
             outliersPanel.classList.remove('visible');
             downloadSection.classList.remove('visible');
+        }
+
+        function updateFileList() {
+            if (currentFiles.length === 0) {
+                fileListContainer.style.display = 'none';
+                return;
+            }
+            
+            fileListContainer.style.display = 'block';
+            fileCount.textContent = currentFiles.length;
+            
+            fileList.innerHTML = currentFiles.map((file, index) => {
+                const sizeKB = (file.size / 1024).toFixed(1);
+                const fileName = file.name.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `
+                    <div class="file-list-item">
+                        <div class="file-list-item-name">
+                            <span class="file-list-item-icon">📄</span>
+                            <div class="file-list-item-info">
+                                <div class="file-list-item-filename" title="${fileName}">${fileName}</div>
+                                <div class="file-list-item-size">${sizeKB} KB</div>
+                            </div>
+                        </div>
+                        <button class="file-list-item-remove" onclick="removeFile(${index})">✕ Remove</button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function removeFile(index) {
+            currentFiles.splice(index, 1);
+            updateFileList();
+            processBtn.disabled = currentFiles.length === 0;
+            
+            if (currentFiles.length === 0) {
+                clearMap();
+                stats.style.display = 'none';
+                legendPanel.style.display = 'none';
+            }
         }
 
         // Checkbox handlers
@@ -701,21 +1011,25 @@
 
         // Direction toggle handler
         showDirection.addEventListener('change', () => {
-            if (currentGeoJSON) {
+            if (traces.length > 0) {
+                renderAllTraces();
+            } else if (currentGeoJSON) {
                 redrawMap();
             }
         });
 
         // Process button handler
         processBtn.addEventListener('click', async () => {
-            if (!currentFile) return;
+            if (currentFiles.length === 0) return;
             
             processBtn.disabled = true;
             processBtn.textContent = 'Processing...';
             showStatus('', '');
             
             const formData = new FormData();
-            formData.append('file', currentFile);
+            currentFiles.forEach(file => {
+                formData.append('files', file);
+            });
             formData.append('remove_outliers', removeOutliers.checked);
             formData.append('threshold', threshold.value * 1000); // Convert km to meters
             
@@ -728,12 +1042,42 @@
                 const data = await response.json();
                 
                 if (!response.ok) {
-                    throw new Error(data.error || 'Failed to process file');
+                    throw new Error(data.error || 'Failed to process file(s)');
                 }
                 
-                currentGeoJSON = data.geojson;
-                displayResults(data);
-                showStatus('File processed successfully!', 'success');
+                // Handle both single and multiple file responses
+                if (data.multiple) {
+                    // Multiple traces
+                    traces = data.traces.map((trace, index) => ({
+                        id: `trace-${index}`,
+                        filename: trace.filename,
+                        geojson: trace.geojson,
+                        outliers: trace.outliers,
+                        total_points: trace.total_points,
+                        processed_points: trace.processed_points,
+                        color: hslToHex(generateColorPalette(data.traces.length)[index]),
+                        visible: true
+                    }));
+                    
+                    displayMultipleTraces();
+                    showStatus(`${traces.length} files processed successfully!`, 'success');
+                } else {
+                    // Single trace (backward compatibility)
+                    traces = [{
+                        id: 'trace-0',
+                        filename: currentFiles[0].name,
+                        geojson: data.geojson,
+                        outliers: data.outliers,
+                        total_points: data.total_points,
+                        processed_points: data.processed_points,
+                        color: '#4A90E2',
+                        visible: true
+                    }];
+                    
+                    displayMultipleTraces();
+                    showStatus('File processed successfully!', 'success');
+                }
+                
                 downloadSection.classList.add('visible');
                 
             } catch (error) {
@@ -778,6 +1122,299 @@
             // Add markers and path to map
             redrawMap();
         }
+
+        function displayMultipleTraces() {
+            // Clear existing layers
+            clearMap();
+            
+            // Show legend
+            legendPanel.style.display = 'block';
+            traceCount.textContent = traces.length;
+            
+            // Create legend items
+            updateLegendItems();
+            
+            // Initialize trace layers
+            traces.forEach(trace => {
+                const layerGroup = L.layerGroup();
+                traceLayers.set(trace.id, layerGroup);
+                traceVisibility.set(trace.id, true);
+                layerGroup.addTo(map);
+            });
+            
+            // Render all traces
+            renderAllTraces();
+            
+            // Update aggregate stats
+            updateAggregateStats();
+            
+            // Update speed chart with all traces
+            updateMultiTraceSpeedChart();
+            
+            // Fit bounds to all visible traces
+            fitBoundsToVisibleTraces();
+        }
+
+        function updateLegendItems(filterText = '') {
+            const filteredTraces = filterText 
+                ? traces.filter(t => t.filename.toLowerCase().includes(filterText.toLowerCase()))
+                : traces;
+            
+            legendItems.innerHTML = filteredTraces.map(trace => `
+                <div class="legend-item ${!trace.visible ? 'disabled' : ''}" id="legend-${trace.id}" onclick="toggleTrace('${trace.id}')">
+                    <input type="checkbox" class="legend-toggle" ${trace.visible ? 'checked' : ''} onchange="event.stopPropagation(); toggleTrace('${trace.id}')">
+                    <div class="legend-color" style="background-color: ${trace.color};"></div>
+                    <div class="legend-label" title="${trace.filename}">${trace.filename}</div>
+                </div>
+            `).join('');
+            
+            if (filteredTraces.length === 0) {
+                legendItems.innerHTML = '<div style="padding: 20px; text-align: center; color: #7f8c8d;">No matching traces</div>';
+            }
+        }
+
+        // Trace filter handler
+        traceFilter.addEventListener('input', (e) => {
+            updateLegendItems(e.target.value);
+        });
+
+        function renderAllTraces() {
+            const allBounds = [];
+            
+            traces.forEach(trace => {
+                if (!trace.visible) return;
+                
+                const layerGroup = traceLayers.get(trace.id);
+                layerGroup.clearLayers();
+                
+                const traceBounds = [];
+                const pointCoords = [];
+                const lineCoords = [];
+                
+                // Collect coordinates first
+                trace.geojson.features.forEach(feature => {
+                    if (feature.geometry.type === 'Point') {
+                        const [lon, lat] = feature.geometry.coordinates;
+                        pointCoords.push({ lon, lat, props: feature.properties });
+                        traceBounds.push([lat, lon]);
+                        allBounds.push([lat, lon]);
+                    }
+                    else if (feature.geometry.type === 'LineString') {
+                        lineCoords.push(feature.geometry.coordinates.map(c => [c[1], c[0]]));
+                    }
+                });
+                
+                // Render lines first (so they appear under markers)
+                lineCoords.forEach(coords => {
+                    const pathLine = L.polyline(coords, {
+                        color: trace.color,
+                        weight: 3,
+                        opacity: 0.7
+                    }).addTo(layerGroup);
+                    
+                    // Add direction arrows if enabled
+                    if (showDirection.checked && coords.length > 1) {
+                        L.polylineDecorator(pathLine, {
+                            patterns: [
+                                {
+                                    offset: 25,
+                                    repeat: 100,
+                                    symbol: L.Symbol.arrowHead({
+                                        pixelSize: 10,
+                                        polygon: false,
+                                        pathOptions: {
+                                            stroke: true,
+                                            weight: 2,
+                                            color: trace.color,
+                                            opacity: 0.8
+                                        }
+                                    })
+                                }
+                            ]
+                        }).addTo(layerGroup);
+                    }
+                });
+                
+                // For performance with many traces, use simplified rendering
+                if (traces.length > 20 && pointCoords.length > 100) {
+                    // Use simpler circle markers without individual popups for many points
+                    const markers = pointCoords.map(({ lon, lat, props }) => {
+                        return L.circleMarker([lat, lon], {
+                            radius: 4,
+                            fillColor: trace.color,
+                            color: '#fff',
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.6
+                        });
+                    });
+                    
+                    // Add all markers as a feature group
+                    const markerGroup = L.featureGroup(markers);
+                    markerGroup.addTo(layerGroup);
+                    
+                    // Add a single popup for the trace
+                    markerGroup.bindPopup(`
+                        <div style="min-width: 200px;">
+                            <strong style="color: ${trace.color};">${trace.filename}</strong><br>
+                            ${pointCoords.length} points<br>
+                            <em>Click individual points for details</em>
+                        </div>
+                    `);
+                } else {
+                    // Full rendering with individual popups for fewer traces/points
+                    pointCoords.forEach(({ lon, lat, props }) => {
+                        const marker = L.circleMarker([lat, lon], {
+                            radius: 5,
+                            fillColor: trace.color,
+                            color: '#fff',
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.7
+                        });
+                        
+                        const popupContent = `
+                            <div style="min-width: 200px;">
+                                <strong style="color: ${trace.color};">${trace.filename}</strong><br>
+                                <strong>${props.event}</strong><br>
+                                ${props.node ? `Node: ${props.node}<br>` : ''}
+                                ${props.start ? `Start: ${props.start}<br>` : ''}
+                                ${props.accuracy ? `Accuracy: ${props.accuracy}m<br>` : ''}
+                            </div>
+                        `;
+                        marker.bindPopup(popupContent);
+                        marker.addTo(layerGroup);
+                    });
+                }
+            });
+            
+            return allBounds;
+        }
+
+        function toggleTrace(traceId) {
+            const trace = traces.find(t => t.id === traceId);
+            if (!trace) return;
+            
+            trace.visible = !trace.visible;
+            traceVisibility.set(traceId, trace.visible);
+            
+            const layerGroup = traceLayers.get(traceId);
+            const legendItem = document.getElementById(`legend-${traceId}`);
+            const checkbox = legendItem.querySelector('.legend-toggle');
+            
+            if (trace.visible) {
+                layerGroup.addTo(map);
+                legendItem.classList.remove('disabled');
+                checkbox.checked = true;
+            } else {
+                map.removeLayer(layerGroup);
+                legendItem.classList.add('disabled');
+                checkbox.checked = false;
+            }
+            
+            renderAllTraces();
+            updateMultiTraceSpeedChart();
+            fitBoundsToVisibleTraces();
+        }
+
+        function clearMap() {
+            // Clear all trace layers
+            traceLayers.forEach(layer => {
+                map.removeLayer(layer);
+            });
+            traceLayers.clear();
+            traceVisibility.clear();
+            
+            // Clear old layers
+            markerLayer.clearLayers();
+            if (pathLine) {
+                map.removeLayer(pathLine);
+                pathLine = null;
+            }
+            if (pathDecorator) {
+                map.removeLayer(pathDecorator);
+                pathDecorator = null;
+            }
+        }
+
+        function fitBoundsToVisibleTraces() {
+            const allBounds = [];
+            
+            traces.forEach(trace => {
+                if (!trace.visible) return;
+                
+                trace.geojson.features.forEach(feature => {
+                    if (feature.geometry.type === 'Point') {
+                        const [lon, lat] = feature.geometry.coordinates;
+                        allBounds.push([lat, lon]);
+                    }
+                });
+            });
+            
+            if (allBounds.length > 0) {
+                map.fitBounds(allBounds, { padding: [50, 50] });
+            }
+        }
+
+        function updateAggregateStats() {
+            stats.style.display = 'flex';
+            
+            const totalPoints = traces.reduce((sum, t) => sum + t.total_points, 0);
+            const displayedPoints = traces.filter(t => t.visible).reduce((sum, t) => sum + t.processed_points, 0);
+            const totalOutliers = traces.reduce((sum, t) => sum + t.outliers.length, 0);
+            
+            document.getElementById('totalPoints').textContent = totalPoints;
+            document.getElementById('displayedPoints').textContent = displayedPoints;
+            document.getElementById('outliersCount').textContent = totalOutliers;
+            
+            // Display outliers from all traces
+            if (checkOutliers.checked && totalOutliers > 0) {
+                outliersPanel.classList.add('visible');
+                const allOutliers = traces.flatMap(trace => 
+                    trace.outliers.map(outlier => ({
+                        ...outlier,
+                        filename: trace.filename
+                    }))
+                );
+                outliersList.innerHTML = allOutliers.map(outlier => 
+                    `<div class="outlier-item">
+                        <strong>${outlier.filename}</strong>: Point ${outlier.index + 1}: ${outlier.event} (${outlier.distance_km}km from center)
+                    </div>`
+                ).join('');
+            } else {
+                outliersPanel.classList.remove('visible');
+            }
+        }
+
+        // Legend button handlers
+        showAllBtn.addEventListener('click', () => {
+            traces.forEach(trace => {
+                trace.visible = true;
+                traceVisibility.set(trace.id, true);
+                const layerGroup = traceLayers.get(trace.id);
+                layerGroup.addTo(map);
+                const legendItem = document.getElementById(`legend-${trace.id}`);
+                legendItem.classList.remove('disabled');
+                legendItem.querySelector('.legend-toggle').checked = true;
+            });
+            renderAllTraces();
+            updateMultiTraceSpeedChart();
+            fitBoundsToVisibleTraces();
+        });
+
+        hideAllBtn.addEventListener('click', () => {
+            traces.forEach(trace => {
+                trace.visible = false;
+                traceVisibility.set(trace.id, false);
+                const layerGroup = traceLayers.get(trace.id);
+                map.removeLayer(layerGroup);
+                const legendItem = document.getElementById(`legend-${trace.id}`);
+                legendItem.classList.add('disabled');
+                legendItem.querySelector('.legend-toggle').checked = false;
+            });
+            renderAllTraces();
+            updateMultiTraceSpeedChart();
+        });
 
         function redrawMap() {
             if (!currentGeoJSON) return;
@@ -1309,13 +1946,310 @@
             console.log('Chart created with', speedData.length, 'data points');
         }
 
+        function updateMultiTraceSpeedChart() {
+            // Process speed data for all visible traces
+            const allTraceSpeedData = [];
+            let allDistances = [];
+            let allSpeeds = [];
+            
+            traces.forEach(trace => {
+                if (!trace.visible) return;
+                
+                // Extract point features with timestamps
+                const points = trace.geojson.features
+                    .filter(f => f.geometry.type === 'Point' && (f.properties.end || f.properties.start))
+                    .map(f => {
+                        const timestampStr = f.properties.end || f.properties.start;
+                        return {
+                            coords: f.geometry.coordinates,
+                            timestamp: new Date(timestampStr),
+                            timestampMs: new Date(timestampStr).getTime(),
+                            event: f.properties.event
+                        };
+                    })
+                    .sort((a, b) => a.timestampMs - b.timestampMs);
+                
+                if (points.length < 2) return;
+                
+                // Calculate speeds for this trace
+                const speedData = [];
+                let totalDistance = 0;
+                let totalTime = 0;
+                
+                for (let i = 1; i < points.length; i++) {
+                    const distance = calculateDistance(points[i-1].coords, points[i].coords);
+                    const timeDiffMs = points[i].timestampMs - points[i-1].timestampMs;
+                    const timeDiff = timeDiffMs / 1000.0;
+                    
+                    if (distance > 0.1) {
+                        const effectiveTime = Math.max(timeDiff, 0.001);
+                        const speed = (distance / effectiveTime) * 3.6;
+                        const cappedSpeed = Math.min(speed, 200);
+                        
+                        speedData.push({
+                            x: points[i].timestamp,
+                            y: cappedSpeed,
+                            distance: distance / 1000,
+                            traceName: trace.filename
+                        });
+                        totalDistance += distance;
+                        totalTime += timeDiff;
+                        allSpeeds.push(cappedSpeed);
+                    }
+                }
+                
+                if (speedData.length > 0) {
+                    allTraceSpeedData.push({
+                        trace: trace,
+                        speedData: speedData,
+                        totalDistance: totalDistance / 1000,
+                        avgSpeed: totalTime > 0 ? (totalDistance / totalTime) * 3.6 : 0
+                    });
+                    allDistances.push(totalDistance / 1000);
+                }
+            });
+            
+            if (allTraceSpeedData.length === 0) {
+                if (speedChart) {
+                    speedChart.destroy();
+                    speedChart = null;
+                }
+                document.getElementById('speedStats').style.display = 'none';
+                document.getElementById('speedAnalysisSection').style.display = 'none';
+                document.getElementById('speedDivider').style.display = 'none';
+                return;
+            }
+            
+            // Show the speed analysis section
+            document.getElementById('speedAnalysisSection').style.display = 'block';
+            document.getElementById('speedDivider').style.display = 'block';
+            
+            // Calculate aggregate stats
+            const totalDistance = allDistances.reduce((sum, d) => sum + d, 0);
+            const avgSpeed = allSpeeds.length > 0 ? allSpeeds.reduce((sum, s) => sum + s, 0) / allSpeeds.length : 0;
+            const maxSpeed = allSpeeds.length > 0 ? Math.max(...allSpeeds) : 0;
+            
+            // Update stats
+            document.getElementById('totalDistance').textContent = `${totalDistance.toFixed(2)} km`;
+            document.getElementById('avgSpeed').textContent = `${avgSpeed.toFixed(1)} km/h`;
+            document.getElementById('maxSpeed').textContent = `${maxSpeed.toFixed(1)} km/h`;
+            document.getElementById('speedStats').style.display = 'flex';
+            
+            // Determine time range for all traces
+            const allTimestamps = allTraceSpeedData.flatMap(t => t.speedData.map(d => d.x.getTime()));
+            const timeSpreadMs = Math.max(...allTimestamps) - Math.min(...allTimestamps);
+            const timeSpreadMinutes = timeSpreadMs / 60000;
+            let timeUnit = 'second';
+            let displayFormat = 'HH:mm:ss';
+            
+            if (timeSpreadMinutes > 120) {
+                timeUnit = 'minute';
+                displayFormat = 'HH:mm';
+            } else if (timeSpreadMinutes > 5) {
+                timeUnit = 'minute';
+                displayFormat = 'HH:mm:ss';
+            }
+            
+            // Create datasets for each trace
+            const datasets = allTraceSpeedData.map(({ trace, speedData, avgSpeed }) => ({
+                label: trace.filename,
+                data: speedData,
+                borderColor: trace.color,
+                backgroundColor: trace.color + '20', // Add transparency
+                borderWidth: 2,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: trace.color,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1,
+                tension: 0.3,
+                fill: false
+            }));
+            
+            // Create or update chart
+            const ctx = document.getElementById('speedChart').getContext('2d');
+            
+            if (speedChart) {
+                speedChart.destroy();
+            }
+            
+            speedChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    aspectRatio: 3,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 11,
+                                    weight: 500
+                                },
+                                color: '#2c3e50',
+                                usePointStyle: true,
+                                padding: 10,
+                                boxWidth: 15
+                            },
+                            onClick: function(e, legendItem, legend) {
+                                const index = legendItem.datasetIndex;
+                                const chart = legend.chart;
+                                const meta = chart.getDatasetMeta(index);
+                                meta.hidden = !meta.hidden;
+                                chart.update();
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+                            titleColor: '#2c3e50',
+                            bodyColor: '#586069',
+                            borderColor: '#d1d5da',
+                            borderWidth: 1,
+                            padding: 12,
+                            displayColors: true,
+                            titleFont: {
+                                family: "'Roboto', sans-serif",
+                                size: 13,
+                                weight: 500
+                            },
+                            bodyFont: {
+                                family: "'Roboto', sans-serif",
+                                size: 12
+                            },
+                            callbacks: {
+                                title: function(context) {
+                                    const date = new Date(context[0].parsed.x);
+                                    return date.toLocaleString('en-US', {
+                                        month: 'short',
+                                        day: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit'
+                                    });
+                                },
+                                label: function(context) {
+                                    const dataPoint = context.dataset.data[context.dataIndex];
+                                    return [
+                                        `${context.dataset.label}`,
+                                        `Speed: ${context.parsed.y.toFixed(1)} km/h`,
+                                        `Distance: ${(dataPoint.distance * 1000).toFixed(1)}m`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'time',
+                            time: {
+                                minUnit: 'millisecond',
+                                unit: timeUnit,
+                                displayFormats: {
+                                    millisecond: 'HH:mm:ss.SSS',
+                                    second: 'HH:mm:ss',
+                                    minute: displayFormat,
+                                    hour: 'HH:mm',
+                                    day: 'MMM d'
+                                },
+                                tooltipFormat: 'MMM d, HH:mm:ss'
+                            },
+                            title: {
+                                display: true,
+                                text: 'Time',
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 13,
+                                    weight: 500
+                                },
+                                color: '#2c3e50'
+                            },
+                            grid: {
+                                color: '#e1e4e8',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 12
+                                },
+                                color: '#586069',
+                                maxRotation: 0,
+                                autoSkip: true,
+                                autoSkipPadding: 20,
+                                maxTicksLimit: 15
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Speed (km/h)',
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 13,
+                                    weight: 500
+                                },
+                                color: '#2c3e50'
+                            },
+                            grid: {
+                                color: '#e1e4e8',
+                                drawBorder: false
+                            },
+                            ticks: {
+                                font: {
+                                    family: "'Roboto', sans-serif",
+                                    size: 12
+                                },
+                                color: '#586069'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            console.log('Multi-trace speed chart created with', allTraceSpeedData.length, 'traces');
+        }
+
         // Download button handler
         downloadBtn.addEventListener('click', () => {
-            if (!currentGeoJSON) return;
+            if (traces.length === 0 && !currentGeoJSON) return;
             
             const format = outputFormat.value;
-            const dataStr = encodeURIComponent(JSON.stringify(currentGeoJSON));
+            let dataToDownload;
             
+            // If multiple traces, combine them or download first one
+            if (traces.length > 0) {
+                // Combine all visible traces into one GeoJSON
+                const combinedFeatures = traces
+                    .filter(t => t.visible)
+                    .flatMap(t => t.geojson.features.map(f => ({
+                        ...f,
+                        properties: {
+                            ...f.properties,
+                            trace: t.filename,
+                            color: t.color
+                        }
+                    })));
+                
+                dataToDownload = {
+                    type: "FeatureCollection",
+                    features: combinedFeatures
+                };
+            } else {
+                dataToDownload = currentGeoJSON;
+            }
+            
+            const dataStr = encodeURIComponent(JSON.stringify(dataToDownload));
             window.location.href = `/download/${format}?data=${dataStr}`;
         });
 

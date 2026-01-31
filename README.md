@@ -5,6 +5,11 @@ Converts audit.csv data to GeoJSON or KML format for mapping paths with proper t
 ## Features
 
 - **Web Application**: Interactive web interface for easy file processing
+- **Multiple File Upload**: Import and overlay multiple audit files simultaneously
+- **Color-Coded Traces**: Each file is assigned a unique color for easy identification
+- **Interactive Legend**: Show/hide individual traces with checkboxes
+- **Trace Filtering**: Search box to quickly find specific traces by filename
+- **Optimized for Scale**: Efficiently handles 100+ overlaid traces
 - **Drag & Drop Upload**: Easy file upload with drag-and-drop support
 - **Live Map Visualization**: See your data on an interactive Leaflet map
 - **Outlier Detection**: Configurable threshold for identifying outliers
@@ -40,12 +45,16 @@ The script converts epoch timestamps from milliseconds to human-readable format:
    Navigate to `http://localhost:5000`
 
 4. **Use the Application**
-   - Drag and drop your `audit.csv` file or click to browse
+   - Drag and drop your `audit.csv` file(s) or click to browse
+   - **Multiple files**: Select multiple CSV files to overlay them on the map
+   - Each trace will be assigned a unique color automatically
+   - Use the legend to show/hide individual traces
+   - Use the filter box to search for specific traces by filename
    - Choose output format (GeoJSON or KML)
    - Optionally enable outlier detection and set threshold
    - Optionally enable outlier removal
    - Click "Process File" to see results on the map
-   - Download the processed file
+   - Download the processed file (combines all visible traces)
 
 ## Production Deployment
 
