@@ -2221,7 +2221,7 @@
         }
 
         // Download button handler
-        downloadBtn.addEventListener('click', () => {
+        downloadBtn.addEventListener('click', async () => {
             if (traces.length === 0 && !currentGeoJSON) return;
             
             const format = outputFormat.value;
@@ -2249,8 +2249,33 @@
                 dataToDownload = currentGeoJSON;
             }
             
-            const dataStr = encodeURIComponent(JSON.stringify(dataToDownload));
-            window.location.href = `/download/${format}?data=${dataStr}`;
+            // Use POST request to avoid URI length limits
+            try {
+                const response = await fetch(`/download/${format}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(dataToDownload)
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Download failed');
+                }
+                
+                // Get the blob and trigger download
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `audit.${format}`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                showStatus('Download failed: ' + error.message, 'error');
+            }
         });
 
         function showStatus(message, type) {

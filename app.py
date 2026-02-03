@@ -375,16 +375,17 @@ def process():
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/download/<format>')
+@app.route('/download/<format>', methods=['POST'])
 def download(format):
     """Download the processed data in the requested format."""
-    geojson_str = request.args.get('data')
+    # Get data from POST body instead of query string
+    data = request.get_json()
     
-    if not geojson_str:
+    if not data:
         return jsonify({'error': 'No data provided'}), 400
     
     try:
-        geojson = json.loads(geojson_str)
+        geojson = data
         
         if format == 'geojson':
             output = io.BytesIO()
