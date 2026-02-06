@@ -1237,9 +1237,9 @@
                 
                 // For performance with many traces, use simplified rendering
                 if (traces.length > 20 && pointCoords.length > 100) {
-                    // Use simpler circle markers without individual popups for many points
-                    const markers = pointCoords.map(({ lon, lat, props }) => {
-                        return L.circleMarker([lat, lon], {
+                    // Use simpler circle markers but still allow individual deletion
+                    pointCoords.forEach(({ lon, lat, props }, pointIndex) => {
+                        const marker = L.circleMarker([lat, lon], {
                             radius: 4,
                             fillColor: trace.color,
                             color: '#fff',
@@ -1247,23 +1247,26 @@
                             opacity: 1,
                             fillOpacity: 0.6
                         });
+                        
+                        const popupContent = `
+                            <div style="min-width: 200px;">
+                                <strong style="color: ${trace.color};">${trace.filename}</strong><br>
+                                <strong>${props.event}</strong><br>
+                                ${props.node ? `Node: ${props.node}<br>` : ''}
+                                ${props.start ? `Start: ${props.start}<br>` : ''}
+                                <button 
+                                    onclick="window.deleteTracePoint('${trace.id}', ${pointIndex}); return false;" 
+                                    style="margin-top: 8px; padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; width: 100%;">
+                                    🗑️ Delete Point
+                                </button>
+                            </div>
+                        `;
+                        marker.bindPopup(popupContent);
+                        marker.addTo(layerGroup);
                     });
-                    
-                    // Add all markers as a feature group
-                    const markerGroup = L.featureGroup(markers);
-                    markerGroup.addTo(layerGroup);
-                    
-                    // Add a single popup for the trace
-                    markerGroup.bindPopup(`
-                        <div style="min-width: 200px;">
-                            <strong style="color: ${trace.color};">${trace.filename}</strong><br>
-                            ${pointCoords.length} points<br>
-                            <em>Click individual points for details</em>
-                        </div>
-                    `);
                 } else {
                     // Full rendering with individual popups for fewer traces/points
-                    pointCoords.forEach(({ lon, lat, props }) => {
+                    pointCoords.forEach(({ lon, lat, props }, pointIndex) => {
                         const marker = L.circleMarker([lat, lon], {
                             radius: 5,
                             fillColor: trace.color,
@@ -1280,6 +1283,11 @@
                                 ${props.node ? `Node: ${props.node}<br>` : ''}
                                 ${props.start ? `Start: ${props.start}<br>` : ''}
                                 ${props.accuracy ? `Accuracy: ${props.accuracy}m<br>` : ''}
+                                <button 
+                                    onclick="window.deleteTracePoint('${trace.id}', ${pointIndex}); return false;" 
+                                    style="margin-top: 8px; padding: 6px 12px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px; width: 100%;">
+                                    🗑️ Delete Point
+                                </button>
                             </div>
                         `;
                         marker.bindPopup(popupContent);
@@ -1627,6 +1635,84 @@
             
             showStatus(`Point deleted. ${pointCount} points remaining.`, 'success');
         }
+
+        function deleteTracePoint(traceId, pointIndex) {
+            console.log('deleteTracePoint called:', traceId, pointIndex);
+            
+            const trace = traces.find(t => t.id === traceId);
+            if (!trace) {
+                console.error('Trace not found:', traceId);
+                return;
+            }
+            
+            // Close any open popups
+            map.closePopup();
+            
+            // Get all point features
+            const pointFeatures = trace.geojson.features.filter(f => f.geometry.type === 'Point');
+            console.log('Point features before deletion:', pointFeatures.length);
+            
+            if (pointIndex < 0 || pointIndex >= pointFeatures.length) {
+                console.error('Invalid point index:', pointIndex, 'valid range: 0 to', pointFeatures.length - 1);
+                return;
+            }
+            
+            // Find the feature to delete
+            const featureToDelete = pointFeatures[pointIndex];
+            console.log('Deleting feature:', featureToDelete.properties.event);
+            
+            // Remove the point from the GeoJSON
+            trace.geojson.features = trace.geojson.features.filter(f => f !== featureToDelete);
+            
+            // Rebuild the path LineString with remaining points
+            const pathCoordinates = [];
+            trace.geojson.features.forEach(feature => {
+                if (feature.geometry.type === 'Point') {
+                    pathCoordinates.push(feature.geometry.coordinates);
+                }
+            });
+            
+            console.log('Remaining points:', pathCoordinates.length);
+            
+            // Remove old LineString if exists
+            trace.geojson.features = trace.geojson.features.filter(f => f.geometry.type !== 'LineString');
+            
+            // Add new LineString if we have enough points
+            if (pathCoordinates.length > 1) {
+                trace.geojson.features.push({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "LineString",
+                        "coordinates": pathCoordinates
+                    },
+                    "properties": {
+                        "name": "Audit Path",
+                        "description": `Path with ${pathCoordinates.length} points`
+                    }
+                });
+            }
+            
+            // Update trace stats
+            trace.processed_points = pathCoordinates.length;
+            
+            // Re-render all traces
+            console.log('Re-rendering traces...');
+            renderAllTraces();
+            
+            // Update aggregate stats
+            updateAggregateStats();
+            
+            // Update speed chart
+            updateMultiTraceSpeedChart();
+            
+            // Fit bounds to visible traces
+            fitBoundsToVisibleTraces();
+            
+            showStatus(`Point deleted from ${trace.filename}. ${pathCoordinates.length} points remaining in trace.`, 'success');
+        }
+
+        // Make function globally accessible
+        window.deleteTracePoint = deleteTracePoint;
 
         function updateStats(data) {
             stats.style.display = 'flex';
